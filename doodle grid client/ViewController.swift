@@ -53,33 +53,28 @@ class ViewController: UIViewController
         
         var netBuf = [UInt8](repeating: 0, count: 512)
         netBuf.removeAll(keepingCapacity: true)
-        var netCount: UInt8 = 0
-        
         for y in 0..<16 {
             for x in 0..<16 {
-                let idx = drawCanvas.bufBytesPerPixel * (x + (y * 16))
-                netBuf.append(UInt8(x))
-                netBuf.append(UInt8(y))
-                netBuf.append(pixelBuf[idx + 0])
-                netBuf.append(pixelBuf[idx + 1])
-                netBuf.append(pixelBuf[idx + 2])
+                let idx = drawCanvas.bufBytesPerPixel * (y + (x * 16))
+                let r = UInt16(pixelBuf[idx + 0] >> 4)
+                let g = UInt16(pixelBuf[idx + 1] >> 4)
+                let b = UInt16(pixelBuf[idx + 2] >> 4)
+
+                let val = (b << (4 + 4)) +
+                          (g << (4)) +
+                          (r)
+
+                let msb = UInt8(val >> 8)
+                let lsb = UInt8(val & 0xFF)
                 
-                netCount += 1
+                netBuf.append(lsb)
+                netBuf.append(msb)
                 
-                if netBuf.count > 500 {
-                    netBuf.insert(netCount, at: 0)
-                    
-                    let _ = sock.send(data: netBuf)
-                    
-                    netCount = 0
-                    netBuf.removeAll(keepingCapacity: true)
-                }
                 
             }
         }
         
         
-        netBuf.insert(netCount, at: 0)
         
         let _ = sock.send(data: netBuf)
         
